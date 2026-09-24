@@ -1,153 +1,187 @@
-﻿# PredictPal
+# PredictPal
 
-PredictPal is a guided time-series forecasting app for hackathon demos and rapid prototyping.
-It takes users from raw data to trained forecasts, then to shareable notebook-style story posts.
+[![LeedsHack 2026 — Parallax Challenge winner](https://img.shields.io/badge/LeedsHack_2026-Parallax_Challenge_Winner-7C3AED?style=flat-square)](https://eps.leeds.ac.uk/faculty-engineering-physical-sciences/news/article/6160/leedshack-2026-gains-major-league-hacking-status-and-a-record-turnout)
+[![Devpost](https://img.shields.io/badge/Devpost-PredictPal-003E54?style=flat-square&logo=devpost)](https://devpost.com/software/predictpal)
 
-## What It Does
-- Upload target and optional driver datasets.
-- Configure preprocessing and modeling with a guided 5-step flow.
-- Train baseline + multivariate models and generate forecast artifacts.
-- Review model quality and forecast outputs in Step 4 visual analysis.
-- Build and publish story posts in Step 5 (including anonymous/local demo publishing).
-- Browse posts in Explore with search and category filters.
+PredictPal is a guided time-series forecasting workbench that turns raw target and driver data into evaluated forecasts, interactive analysis, and shareable notebook-style stories.
 
-## Stack
-- Frontend: Next.js 16, React 19, Tailwind CSS 4, Zustand, Recharts, Lucide
-- Backend: FastAPI, Pandas, scikit-learn, skforecast
-- Optional integrations: Supabase and Gemini/OpenAI-style AI helpers
+> **Winner — Parallax Sponsor Challenge: “Use the past to predict the future”, LeedsHack 2026.**
 
-## Repository Layout
+[Devpost submission](https://devpost.com/software/predictpal) · [University of Leeds coverage](https://eps.leeds.ac.uk/faculty-engineering-physical-sciences/news/article/6160/leedshack-2026-gains-major-league-hacking-status-and-a-record-turnout)
+
+## Why PredictPal?
+
+Forecasting software is often powerful but difficult to use or explain. PredictPal guides non-specialists through the full workflow: ingesting messy data, choosing preprocessing and modelling options, comparing a baseline with a driver-aware model, understanding the result, and turning it into a readable story.
+
+The project was built during the 24-hour LeedsHack 2026 competition, where more than 50 projects were submitted. It won Parallax’s forecasting challenge for automating a data-analysis pipeline with clear outputs. Following the event, the team was invited to Parallax HQ to present the system and discuss its technical decisions and real-world product applications.
+
+## Product flow
+
+```mermaid
+flowchart LR
+    A["Upload data"] --> B["Process data"]
+    B --> C["Train & forecast"]
+    C --> D["Analyse results"]
+    D --> E["Publish story"]
+```
+
+1. **Get Started** — upload a target dataset and optional driver datasets.
+2. **Process Data** — select date/value columns, detect frequency, and configure missing-value and outlier handling.
+3. **Train & Forecast** — compare a lagged Ridge or seasonal-naive baseline with a multivariate gradient-boosting model.
+4. **Analysis & Results** — inspect holdout or walk-forward metrics, forecast charts, driver signals, and feature importance.
+5. **Publish Story** — combine explanations and charts into a notebook-style post for the Explore feed.
+
+A context-aware Gemini assistant can explain choices and suggest settings when `GEMINI_API_KEY` is configured. The core flow remains usable without it.
+
+## What is implemented
+
+- CSV and spreadsheet ingestion for target and driver series
+- Frequency detection and frequency-aware driver alignment
+- Separate preprocessing choices for target and driver data
+- Lag, calendar, and holiday feature engineering
+- Baseline and multivariate forecasting
+- Single-split and walk-forward validation
+- RMSE, MAE, NRMSE, and relative-improvement reporting
+- Per-run JSON/CSV artefacts consumed by the analysis UI
+- Interactive Recharts visualisations and notebook-style result publishing
+- In-memory backend stories plus browser-local persistence for resilient demos
+- Optional Gemini guidance; a Supabase schema is included for future persistence work
+
+## Architecture
+
+| Layer | Technologies | Responsibility |
+| --- | --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4, Zustand, Recharts | Guided workflow, analysis, visualisation, and story publishing |
+| API | FastAPI, Pydantic, Uvicorn | Upload, preprocessing, training, analysis, chat, and story endpoints |
+| Forecasting | pandas, scikit-learn, skforecast | Feature engineering, model fitting, evaluation, and forecast artefacts |
+| Optional integration | Gemini | Contextual guidance when an API key is configured |
+
+The backend writes artefacts for each run, and the frontend reads them for the analysis and publishing steps. Story posts live in backend memory or browser-local storage; the included Supabase schema is not wired into this flow.
+
+## Repository layout
+
 ```text
 backend/
   app/
-    main.py
-    api/endpoints.py
-    core/
-    outputs/
+    api/endpoints.py       API routes and in-memory project state
+    core/                  preprocessing, features, models, evaluation, reporting
+    main.py                FastAPI application
+  tests/                   preprocessing and forecasting tests
 frontend/
   src/
-    app/
-      page.tsx
-      create/page.tsx
-      explore/page.tsx
-      explore/[storyId]/page.tsx
-      about/page.tsx
-      login/page.tsx
-      terms/page.tsx
-    components/
-      steps/
-      story/
-    lib/
-      api.ts
-      store.ts
-      debugStories.ts
-      localStories.ts
-README.md
-supabase_schema.sql
+    app/                   Next.js routes
+    components/steps/      five-stage forecasting workflow
+    components/story/      published notebook rendering
+    lib/                   API client, state, and local persistence
+requirements.txt           Python dependencies
+supabase_schema.sql        optional persistence schema
 ```
 
-## Prerequisites
+## Run locally
+
+### Prerequisites
+
+- Python 3.11 recommended
 - Node.js 20+
 - npm 10+
-- Python 3.10 to 3.12
 
-## Quick Start
-1. Clone and open the project:
+### 1. Clone the repository
+
 ```bash
-git clone <repo-url>
-cd LeedsHack2026
+git clone https://github.com/PredictPal/ml-pipeline.git
+cd ml-pipeline
 ```
 
-2. Create Python environment and install backend dependencies:
-```bash
-python -m venv venv
-# Windows
-.\venv\Scripts\activate
-# macOS/Linux
-source venv/bin/activate
+### 2. Set up the backend
 
-pip install -r backend/requirements.txt
-```
+```bash
+python -m venv .venv
+source .venv/bin/activate        # macOS/Linux
 
-3. Create backend env file:
-```bash
-copy backend\.env.example backend\.env
-```
-Linux/macOS:
-```bash
+pip install -r requirements.txt
 cp backend/.env.example backend/.env
-```
-
-4. Start backend:
-```bash
 cd backend
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-5. Start frontend in a second terminal:
+On Windows PowerShell, activate the environment and copy the template with:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+Copy-Item backend\.env.example backend\.env
+```
+
+### 3. Set up the frontend
+
+In a second terminal:
+
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-## URLs
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8000/api`
-- Backend docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/health`
+Open:
 
-## Environment Variables
+- Frontend: <http://localhost:3000>
+- API documentation: <http://localhost:8000/docs>
+- Health check: <http://localhost:8000/health>
+
+## Configuration
+
+The forecasting flow can run locally without external services. Gemini guidance is optional. Supabase credentials are shown in the existing environment template, but the current story flow does not persist to Supabase.
+
 Backend (`backend/.env`):
+
 ```env
-SUPABASE_URL=your-supabase-url
-SUPABASE_KEY=your-supabase-anon-key
-OPENAI_API_KEY=your-openai-key
+# Supabase connection settings (schema included; story persistence not wired up)
+SUPABASE_URL=
+SUPABASE_KEY=
+
+# Optional contextual assistant
+GEMINI_API_KEY=
 ```
 
 Frontend (`frontend/.env.local`, optional):
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
 ```
-If `NEXT_PUBLIC_API_URL` is not set, frontend defaults to `http://localhost:8000/api`.
 
-## Main User Flow (`/create`)
-1. Get Started
-2. Process Data
-3. Train & Forecast
-4. Analysis & Results
-5. Publish Story
+If `NEXT_PUBLIC_API_URL` is omitted, the frontend uses `http://localhost:8000/api`.
 
-## Debug Mode Notes
-- Use the bug button on `/create` to open Debug State.
-- Debug State supports step-jump controls.
-- Step 5 debug pinning now lives there:
-- `Pin Step 5 publish as persistent debug sample in Explore`
-- This flag controls whether published stories are also stored as pinned debug samples.
+## Verification
 
-## Explore and Persistence Behavior
-- Backend stories are in-memory by default.
-- The app also keeps local persisted stories in browser storage for demo resilience:
-- Anonymous/local published stories can still appear and open in Explore.
-- Pinned debug samples can persist in the browser.
-- Explore feed merges backend, local, and sample stories with dedupe.
-
-## Common Commands
-Backend:
 ```bash
-python -m uvicorn app.main:app --reload --port 8000
-python -m py_compile app/api/endpoints.py app/core/training.py
-```
+# Backend
+python -m pip install pytest
+python -m pytest backend/tests
 
-Frontend:
-```bash
-npm run dev
-npm run build
+# Frontend
+cd frontend
 npm run lint
-npx tsc --noEmit
+npm run build
 ```
 
-## Notes for Demo Day
-- If backend restarts, in-memory backend projects reset.
-- Local persisted stories/debug samples in browser can still power Explore demos.
-- For clean demo setup, clear browser local storage between runs if needed.
+## Team
+
+PredictPal was created collaboratively by:
+
+- [Nathan Walsh](https://github.com/NathanWalash)
+- [Cal Levitt](https://github.com/Cal-levitt111)
+- [Gabriel Saban](https://github.com/gabrielsaban)
+- [Kian Thakrar](https://github.com/KianThakrar)
+
+The team worked across product design, frontend development, data ingestion and preprocessing, forecasting and validation, visualisation, and technical storytelling.
+
+## Recognition
+
+LeedsHack 2026 took place on 7–8 February 2026 and became part of the Major League Hacking network. PredictPal won the **Parallax Sponsor Challenge: “Use the past to predict the future”**. The University of Leeds described the project as an automated data-analysis pipeline with clear outputs.
+
+Following the hackathon, the team was invited to Parallax HQ to discuss PredictPal.
+
+## Project status
+
+PredictPal is preserved as a hackathon prototype and portfolio project rather than a hosted production service. The repository reflects the final post-event implementation, including frequency-aware preprocessing and per-run analysis artefacts.
+
+For the original submission story and judging context, see the [Devpost project](https://devpost.com/software/predictpal).
